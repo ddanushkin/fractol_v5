@@ -14,12 +14,25 @@ void			init_fcl(t_fcl *fcl)
 	fcl->max_i = 100;
 }
 
-void			julia(void *thread)
+void			*julia(void *thread)
 {
 	t_thr		*t;
+	int 		i;
+	int 		x;
+	int 		y;
 
 	t = (t_thr *)thread;
-
+	y = t->index * HGT / THR;
+	while (y++ < HGT / THR * (t->index + 1))
+	{
+		x = 0;
+		while (x++ < WTH)
+		{
+			i =
+			if (i < t->fcl->max_i)
+				set_color(i, x, y, t->fcl);
+		}
+	}
 }
 
 void			pthread_calc(t_fcl *fcl)
@@ -47,10 +60,10 @@ void			showing(t_fcl *fcl)
 	mlx_put_image_to_window(fcl->mlx->mlx, fcl->mlx->win, fcl->mlx->img, 0, 0);
 }
 
-void 			*change_algorithm(t_fcl *fcl, char *algorithm)
+void			change_algorithm(t_fcl *fcl, char *algorithm)
 {
 	if (ft_strcmp("julia", algorithm) == 0)
-		fcl->f = julia;
+		 fcl->f = julia;
 }
 
 int main(int argc, char *argv[])
@@ -59,7 +72,7 @@ int main(int argc, char *argv[])
 
 	if (argc == 2)
 	{
-		fcl.f = change_algorithm(&fcl, argv[1]);
+		change_algorithm(&fcl, argv[1]);
 		init_fcl(&fcl);
 		showing(&fcl);
 	}
