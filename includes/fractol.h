@@ -20,16 +20,31 @@ typedef struct			s_mlx
 	int					sl;
 	int					bpp;
 	int					endian;
+	char 				*data;
 	void				*mlx;
 	void				*img;
 	void				*win;
 }						t_mlx;
 
+typedef struct			s_color
+{
+	float 				r;
+	float 				g;
+	float				b;
+}						t_color;
+
+typedef struct			s_pnts
+{
+	float				x;
+	float 				y;
+}						t_pnts;
+
 typedef struct			s_fcl
 {
+	t_pnts				p;
 	int 				max_i;
 	void				*(*f)(void *);
-	t_mlx				*mlx;
+	t_mlx				mlx;
 }						t_fcl;
 
 
