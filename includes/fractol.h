@@ -11,8 +11,8 @@
 #include <fcntl.h>
 #include "pthread.h"
 
-#define WTH 600
-#define HGT 600
+#define WTH 1000
+#define HGT 1000
 #define THR 50
 
 typedef struct			s_mlx
@@ -41,9 +41,9 @@ typedef struct			s_pnts
 
 typedef struct			s_fcl
 {
-	t_pnts				p;
+	t_pnts				pt;
 	int 				max_i;
-	void				*(*f)(void *);
+	int					(*f)(int, int, void *);
 	t_mlx				mlx;
 }						t_fcl;
 
@@ -52,7 +52,7 @@ typedef struct			s_thr
 {
 	int 				index;
 	pthread_t			p;
-	t_fcl				*fcl;
+	t_fcl				fcl;
 }						t_thr;
 
 
