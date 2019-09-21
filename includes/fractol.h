@@ -11,9 +11,10 @@
 #include <fcntl.h>
 #include "pthread.h"
 
-#define WTH 1000
-#define HGT 1000
+#define WTH 1000.0f
+#define HGT 1000.0f
 #define THR 50
+#define PART HGT / THR
 
 typedef struct			s_mlx
 {
@@ -25,6 +26,12 @@ typedef struct			s_mlx
 	void				*img;
 	void				*win;
 }						t_mlx;
+
+typedef struct			s_complex
+{
+	float 				re;
+	float 				im;
+}						t_complex;
 
 typedef struct			s_color
 {
@@ -41,9 +48,18 @@ typedef struct			s_pnts
 
 typedef struct			s_fcl
 {
+	t_complex			c;
+	t_complex			min;
+	t_complex			max;
+	t_complex			factor;
 	t_pnts				pt;
-	int 				max_i;
-	int					(*f)(int, int, void *);
+	float 				zoom_factor;
+	float 				tmp1;
+	float				offset1;
+	float				offset2;
+	int 				stop_move;
+	float 				max_i;
+	float				(*f)(t_complex, void *);
 	t_mlx				mlx;
 }						t_fcl;
 

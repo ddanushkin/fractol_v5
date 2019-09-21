@@ -1,31 +1,50 @@
 #include "../includes/fractol.h"
 
+
+t_complex		init_complex(float re, float im)
+{
+	t_complex	c;
+
+	c.im = im;
+	c.re = re;
+	return (c);
+}
+
 void			alert_message(char *alert)
 {
 	ft_putstr(alert);
+}
+
+void			apply_zoom(t_fcl *f, t_complex mouse)
+{
+	float 		interpolation;
+
+	interpolation = 1.0f / f->zoom_factor;
+	f->min.re = mouse.re + (f->min.re - mouse.re) * interpolation;
+	f->min.im = mouse.im + (f->min.im - mouse.im) * interpolation;
+	f->max.re = mouse.re + (f->min.re - mouse.re) * interpolation;
+	f->max.im = mouse.im + (f->min.im - mouse.im) * interpolation;
+	f->factor = init_complex((f->max.re - f->min.re) / (WTH - 1),
+							 (f->max.im - f->min.im) / (HGT - 1));
+	f->tmp1 = (f->max.re - f->min.re) * 0.025f;
 }
 
 void			init_fcl(t_fcl *fcl)
 {
 	fcl->mlx.mlx = mlx_init();
 	fcl->mlx.win = mlx_new_window(fcl->mlx.mlx, WTH, HGT, "Fractol");
-//	fcl->mlx.img = mlx_new_image(fcl->mlx.mlx, WTH, HGT);
-	fcl->max_i = 100;
+	fcl->max_i = 100.0f;
+	fcl->zoom_factor = 1.0f;
+	fcl->stop_move = 1;
+	fcl->offset1 = 0.0f;
+	fcl->offset2 = 0.0f;
 }
 
-//float 			color_func(int it, float off)
-//{
-//	float		res;
-//
-//	res = (float)cos(sqrt(it) + off);
-//	return (255 * res * res);
-//}
-
-void			pixel_to_img(t_fcl *f, int x, int y, t_color c)
+void			pixel_to_img(t_fcl *f, float x, float y, t_color c)
 {
 	int 		index;
 
-	index = x * 4 + f->mlx.sl * y;
+	index = (int)(x * 4.0f + f->mlx.sl * y);
 	f->mlx.data[index] = (char)c.b;
 	f->mlx.data[index + 1] = (char)c.g;
 	f->mlx.data[index + 2] = (char)c.r;
@@ -49,76 +68,47 @@ void			set_color(float iter, float x, float y, t_fcl *f)
 	pixel_to_img(f, x, y, color);
 }
 
-//void			*julia(void *thread)
+//float			julia(float x, float y, void *fr)
 //{
-//	t_thr		*t;
-//	float 		i;
-//	int 		x;
-//	int 		y;
-//	float		c_re;
-//	float 		c_im;
-//	float 		new_re;
-//	float 		new_im;
-//	float 		old_re;
-//	float 		old_im;
+//	float 		iter;
+//	float 		x_temp;
+//	float 		y_temp;
 //
-//	float 		zoom = 1.0f;
-//	float 		move_x = 0.0f;
-//	float		move_y = 0.0f;
-//
-//	c_re = -0.7f;
-//	c_im = 0.27015f;
-//
-//	t = (t_thr *)thread;
-//	y = t->index * HGT / THR;
-//	while (y < HGT / THR * (t->index + 1))
+//	t_fcl *f = (t_fcl *)fr;
+//	iter = 0;
+////	f->pt.x = WTH / HGT * (x - WTH * 0.5f) / (f->zoom_factor * WTH * 0.5f);
+////	f->pt.y = (y - HGT * 0.5f) / (f->zoom_factor * HGT * 0.5f);
+//	f->pt.x = (WTH / HGT * (x - WTH * 0.5f) / (WTH * 0.5f));
+//	f->pt.y = ((y - HGT * 0.5f) / (HGT * 0.5f));
+////	f->c.im = (f->max.im - x * f->factor.im);
+////	f->c.re = (f->min.re - y * f->factor.re);
+//	while (f->pt.x * f->pt.x + f->pt.y * f->pt.y <= 4.0f && iter < f->max_i)
 //	{
-//		x = 0;
-//		while (x < WTH)
-//		{
-//			i = 0.0f;
-//			new_re = 1.5f * (x - WTH / 2.0f) / (0.5f * zoom * WTH) + move_x;
-//			new_im = (y - HGT / 2.0f) / (0.5f * zoom * HGT) + move_y;
-//			while (i < t->fcl->max_i)
-//			{
-//				old_re = new_re;
-//				old_im = new_im;
-//				new_re = old_re * old_re - old_im * old_im + c_re;
-//				new_im = 2.0f * old_re * old_im + c_im;
-//				if ((new_re * new_re + new_im * new_im) > 4)
-//					break ;
-//			}
-//			if (i < t->fcl->max_i)
-//				set_color(i, x, y, t->fcl);
-//			x++;
-//		}
-//		y++;
+//		x_temp = f->pt.x * f->pt.x - f->pt.y * f->pt.y + f->c.re;
+//		y_temp = 2.0f * f->pt.x * f->pt.y + f->c.im;
+//		f->pt.x = x_temp;
+//		f->pt.y = y_temp;
+//		iter++;
 //	}
-//	return (NULL);
+//	return (iter);
 //}
 
-int				julia(int x, int y, t_fcl *f)
+float 			julia(t_complex c, void *f_)
 {
-	int 		iter;
-	float		c_re;
-	float 		c_im;
-	float 		x_temp;
-	float 		y_temp;
+	int 		i;
+	t_complex	z;
+	t_fcl		*f;
 
-	iter = 0;
-	f->pt.x = WTH / HGT * (x - WTH / 2) / (WTH / 2);
-	f->pt.y = (y - HGT / 2) / (HGT / 2);
-	c_re = -0.7f;
-	c_im = 0.27015f;
-	while (f->pt.x * f->pt.x + f->pt.y * f->pt.y <= 4.0f && iter < f->max_i)
+	z = c;
+	f = (t_fcl *)f_;
+	i = 0;
+	while (z.re * z.re + z.im * z.im <= 4.0f && i < f->max_i)
 	{
-		x_temp = f->pt.x * f->pt.x - f->pt.y * f->pt.y + c_re;
-		y_temp = 2 * f->pt.x * f->pt.y + c_im;
-		f->pt.x = x_temp;
-		f->pt.y = y_temp;
-		iter++;
+		z = init_complex(z.re * z.re + z.im * z.im + f->c.re,
+				2.0f * z.re * z.im + f->c.im);
+		i++;
 	}
-	return (iter);
+	return (i);
 }
 
 void			*fractals(void *thread)
@@ -126,18 +116,20 @@ void			*fractals(void *thread)
 	t_thr		*t;
 	int 		x;
 	int 		y;
-	int			iter;
+	float		iter;
+	t_complex	c;
 
 	t = thread;
-	y = t->index * HGT / THR;
-	while (y < HGT / THR * (t->index + 1))
+	y = t->index * PART;
+	while (y < PART * (t->index + 1.0f))
 	{
 		x = 0;
+		c.im = (t->fcl.max.im + t->fcl.offset2 - y * t->fcl.factor.im);
 		while (x < WTH)
 		{
-			iter = julia(x, y, &t->fcl);
-			if (iter < t->fcl.max_i)
-				set_color(iter, x, y, &t->fcl);
+			c.re = (t->fcl.min.re + t->fcl.offset1 + x * t->fcl.factor.re);
+			if ((iter = t->fcl.f(c, &(t->fcl))) < t->fcl.max_i)
+				set_color(iter, x, y, &(t->fcl));
 			x++;
 		}
 		y++;
@@ -145,7 +137,7 @@ void			*fractals(void *thread)
 	return (NULL);
 }
 
-void			pthread_calc(t_fcl *fcl)
+void			pthread_calc(t_fcl *f)
 {
 	t_thr		*t;
 	int 		i;
@@ -156,7 +148,7 @@ void			pthread_calc(t_fcl *fcl)
 	while (i < THR)
 	{
 		t[i].index = i;
-		t[i].fcl = *fcl;
+		t[i].fcl = *f;
 		pthread_create(&(t[i].p), NULL, fractals, (void *)&t[i]);
 		i++;
 	}
@@ -180,8 +172,83 @@ void			change_algorithm(t_fcl *fcl, char *algorithm)
 		 fcl->f = julia;
 }
 
+int 			mouse_move(int x_, int y_, t_fcl *f)
+{
+	float		x;
+	float 		y;
+
+	x = (float)x_;
+	y = (float)y_;
+	if (f->stop_move == 0)
+		return (0);
+	if (x < 0 || x > WTH)
+		x = (x > WTH) ? WTH : 0;
+	if (y < 0 || y > HGT)
+		y = (y > HGT) ? HGT : 0;
+	f->c = init_complex((x - WTH * 0.5f) / HGT,
+			4.0f * ((HGT - y) - HGT * 0.5f) / HGT);
+	showing(f);
+	return (0);
+}
+
+int 			choose_zoom(t_fcl *f, float x, float y, int key)
+{
+	t_complex	mouse;
+	if (key == 4)
+	{
+		f->zoom_factor *= 1.25f;
+		mouse = init_complex(x / (WTH / (f->max.re - f->min.re)) + f->min.re,
+							 y / (HGT / (f->max.im - f->min.im)) + f->min.im);
+		apply_zoom(f, mouse);
+	}
+	if (key == 5)
+	{
+		f->zoom_factor *= 0.8f;
+		if (f->min.im == -2.0f && f->min.re == -2.0f && f->max.im == 2.0f && f->max.re == 2.0f)
+			return (0);
+		mouse = init_complex(x / (WTH / (f->max.re - f->min.re)) + f->min.re,
+							 y / (HGT / (f->max.im - f->min.im)) + f->min.im);
+		apply_zoom(f, mouse);
+	}
+	return (1);
+}
+
+int 			deal_mouse(int key, int x_, int y_, t_fcl *f)
+{
+	float		y;
+	float 		x;
+
+	y = (float)y_;
+	x = (float)x_;
+	y = HGT - y;
+	if (key == 1)
+	{
+		f->max_i += 40.0f;
+	}
+	if (key == 2)
+	{
+		f->max_i -= 40.0f;
+	}
+	if (key == 4 || key == 5)
+		if (choose_zoom(f, x, y, key) == 0)
+			return (0);
+	showing(f);
+	printf("scroll down %d zoom factor %f c_re %f  c_im %f \n", key, f->zoom_factor, f->c.re, f->c.im);
+	return (0);
+}
+
 int 			deal_key(int key, t_fcl *f)
 {
+	if (key == 123) // left
+		f->offset1 += f->tmp1;
+	if (key == 124) // right
+		f->offset1 -= f->tmp1;
+	if (key == 126) // up
+		f->offset2 += f->tmp1;
+	if (key == 125) // down
+		f->offset2 -= f->tmp1;
+	if (key == 6)
+		f->stop_move = (f->stop_move == 1) ? 0 : 1;
 	if (key == 53)
 		exit(0);
 	showing(f);
@@ -190,15 +257,17 @@ int 			deal_key(int key, t_fcl *f)
 
 int 			main(int argc, char *argv[])
 {
-	t_fcl		fcl;
+	t_fcl		f;
 
 	if (argc == 2)
 	{
-		change_algorithm(&fcl, argv[1]);
-		init_fcl(&fcl);
-		showing(&fcl);
-		mlx_hook(fcl.mlx.win, 2, 5, deal_key, &fcl);
-		mlx_loop(fcl.mlx.mlx);
+		change_algorithm(&f, argv[1]);
+		init_fcl(&f);
+		showing(&f);
+		mlx_hook(f.mlx.win, 2, 5, deal_key, &f);
+		mlx_hook(f.mlx.win, 6, 0, mouse_move, &f);
+		mlx_hook(f.mlx.win, 4, 5, deal_mouse, &f);
+		mlx_loop(f.mlx.mlx);
 	}
 	return 0;
 }
