@@ -11,9 +11,9 @@
 #include <fcntl.h>
 #include "pthread.h"
 
-#define WTH 1000.0f
-#define HGT 1000.0f
-#define THR 50
+#define WTH 1000
+#define HGT 1000
+#define THR 10
 #define PART HGT / THR
 
 typedef struct			s_mlx

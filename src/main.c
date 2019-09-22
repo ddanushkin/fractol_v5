@@ -33,7 +33,7 @@ void			init_fcl(t_fcl *fcl)
 {
 	fcl->mlx.mlx = mlx_init();
 	fcl->mlx.win = mlx_new_window(fcl->mlx.mlx, WTH, HGT, "Fractal");
-	fcl->max_i = 100;
+	fcl->max_i = 30;
 	fcl->zoom_factor = 1.0f;
 	fcl->stop_move = 1;
 	fcl->tmp1 = 0.5f;
@@ -44,20 +44,21 @@ void			init_fcl(t_fcl *fcl)
 	fcl->max.im = fcl->min.im + (fcl->max.re - fcl->min.re) * HGT / WTH;
 	fcl->factor = init_complex((fcl->max.re - fcl->min.re) / (WTH - 1.0f),
 							   (fcl->max.im - fcl->min.im) / (HGT - 1.0f));
-
+	fcl->mlx.img = mlx_new_image(fcl->mlx.mlx, WTH, HGT);
+	fcl->mlx.data = mlx_get_data_addr(fcl->mlx.img, &(fcl->mlx.bpp), &(fcl->mlx.sl), &(fcl->mlx.endian));
 }
 
-void			pixel_to_img(t_fcl *f, float x, float y, t_color c)
+void			pixel_to_img(t_fcl *f, int x, int y, t_color c)
 {
 	int 		index;
 
-	index = (int)(x * 4.0f + f->mlx.sl * y);
+	index = (int)(x * 4 + f->mlx.sl * y);
 	f->mlx.data[index] = (char)c.b;
 	f->mlx.data[index + 1] = (char)c.g;
 	f->mlx.data[index + 2] = (char)c.r;
 }
 
-void			set_color(float iter, float x, float y, t_fcl *f)
+void			set_color(float iter, int x, int y, t_fcl *f)
 {
 	t_color		color;
 	float 		t;
@@ -105,14 +106,17 @@ int 			julia(t_complex c, void *f_)
 	int 		i;
 	t_complex	z;
 	t_fcl		*f;
+	float		z_sum;
 
 	z = c;
 	f = (t_fcl *)f_;
 	i = 0;
-	while (z.re * z.re + z.im * z.im <= 4.0f && i < f->max_i)
+	z_sum = z.re * z.re - z.im * z.im;
+	while (z_sum <= 4.0f && i < f->max_i)
 	{
-		z = init_complex(z.re * z.re + z.im * z.im + f->c.re,
-				2.0f * z.re * z.im + f->c.im);
+		z.im = 2.0f * z.re * z.im + f->c.im;
+		z.re = z_sum + f->c.re;
+		z_sum = z.re * z.re - z.im * z.im;
 		i++;
 	}
 	return (i);
@@ -121,14 +125,14 @@ int 			julia(t_complex c, void *f_)
 void			*fractals(void *thread)
 {
 	t_thr		*t;
-	float 		x;
-	float 		y;
+	int 		x;
+	int 		y;
 	float		iter;
 	t_complex	c;
 
 	t = (t_thr *)thread;
 	y = t->index * PART;
-	while (y < PART * (float)(t->index + 1))
+	while (y < PART * (t->index + 1))
 	{
 		x = 0;
 		c.im = (t->fcl.max.im + t->fcl.offset2 - y * t->fcl.factor.im);
@@ -137,6 +141,14 @@ void			*fractals(void *thread)
 			c.re = (t->fcl.min.re + t->fcl.offset1 + x * t->fcl.factor.re);
 			if ((iter = t->fcl.f(c, &(t->fcl))) < t->fcl.max_i)
 				set_color(iter, x, y, &(t->fcl));
+			else
+			{
+				t_color black;
+				black.r = 0;
+				black.g = 0;
+				black.b = 0;
+				pixel_to_img(&t->fcl, x, y, black);
+			}
 			x++;
 		}
 		y++;
