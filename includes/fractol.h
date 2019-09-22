@@ -35,9 +35,9 @@ typedef struct			s_complex
 
 typedef struct			s_color
 {
-	float 				r;
-	float 				g;
-	float				b;
+	char 				r;
+	char 				g;
+	char				b;
 }						t_color;
 
 typedef struct			s_pnts
@@ -58,8 +58,8 @@ typedef struct			s_fcl
 	float				offset1;
 	float				offset2;
 	int 				stop_move;
-	float 				max_i;
-	float				(*f)(t_complex, void *);
+	int 				max_i;
+	int					(*f)(t_complex, void *);
 	t_mlx				mlx;
 }						t_fcl;
 

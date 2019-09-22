@@ -24,20 +24,27 @@ void			apply_zoom(t_fcl *f, t_complex mouse)
 	f->min.im = mouse.im + (f->min.im - mouse.im) * interpolation;
 	f->max.re = mouse.re + (f->min.re - mouse.re) * interpolation;
 	f->max.im = mouse.im + (f->min.im - mouse.im) * interpolation;
-	f->factor = init_complex((f->max.re - f->min.re) / (WTH - 1),
-							 (f->max.im - f->min.im) / (HGT - 1));
+	f->factor = init_complex((f->max.re - f->min.re) / (WTH - 1.0f),
+							 (f->max.im - f->min.im) / (HGT - 1.0f));
 	f->tmp1 = (f->max.re - f->min.re) * 0.025f;
 }
 
 void			init_fcl(t_fcl *fcl)
 {
 	fcl->mlx.mlx = mlx_init();
-	fcl->mlx.win = mlx_new_window(fcl->mlx.mlx, WTH, HGT, "Fractol");
-	fcl->max_i = 100.0f;
+	fcl->mlx.win = mlx_new_window(fcl->mlx.mlx, WTH, HGT, "Fractal");
+	fcl->max_i = 100;
 	fcl->zoom_factor = 1.0f;
 	fcl->stop_move = 1;
+	fcl->tmp1 = 0.5f;
 	fcl->offset1 = 0.0f;
 	fcl->offset2 = 0.0f;
+	fcl->min = init_complex(-2.0f * HGT / WTH, -2.0f);
+	fcl->max.re = 2.0f * HGT / WTH;
+	fcl->max.im = fcl->min.im + (fcl->max.re - fcl->min.re) * HGT / WTH;
+	fcl->factor = init_complex((fcl->max.re - fcl->min.re) / (WTH - 1.0f),
+							   (fcl->max.im - fcl->min.im) / (HGT - 1.0f));
+
 }
 
 void			pixel_to_img(t_fcl *f, float x, float y, t_color c)
@@ -61,9 +68,9 @@ void			set_color(float iter, float x, float y, t_fcl *f)
 	color.b = 0;
 	if (iter < f->max_i)
 	{
-		color.r = (9 * (1 - t) * t * t * t * 255);
-		color.g = (15 * (1 - t) * (1 - t) * t * t * 255);
-		color.b = (8.5f * (1 - t) * (1 - t) * (1 - t) * t * 255);
+		color.r = (char)(9 * (1 - t) * t * t * t * 255);
+		color.g = (char)(15 * (1 - t) * (1 - t) * t * t * 255);
+		color.b = (char)(8.5f * (1 - t) * (1 - t) * (1 - t) * t * 255);
 	}
 	pixel_to_img(f, x, y, color);
 }
@@ -93,7 +100,7 @@ void			set_color(float iter, float x, float y, t_fcl *f)
 //	return (iter);
 //}
 
-float 			julia(t_complex c, void *f_)
+int 			julia(t_complex c, void *f_)
 {
 	int 		i;
 	t_complex	z;
@@ -114,14 +121,14 @@ float 			julia(t_complex c, void *f_)
 void			*fractals(void *thread)
 {
 	t_thr		*t;
-	int 		x;
-	int 		y;
+	float 		x;
+	float 		y;
 	float		iter;
 	t_complex	c;
 
-	t = thread;
+	t = (t_thr *)thread;
 	y = t->index * PART;
-	while (y < PART * (t->index + 1.0f))
+	while (y < PART * (float)(t->index + 1))
 	{
 		x = 0;
 		c.im = (t->fcl.max.im + t->fcl.offset2 - y * t->fcl.factor.im);
@@ -185,7 +192,7 @@ int 			mouse_move(int x_, int y_, t_fcl *f)
 		x = (x > WTH) ? WTH : 0;
 	if (y < 0 || y > HGT)
 		y = (y > HGT) ? HGT : 0;
-	f->c = init_complex((x - WTH * 0.5f) / HGT,
+	f->c = init_complex((x - WTH * 0.5f) / WTH,
 			4.0f * ((HGT - y) - HGT * 0.5f) / HGT);
 	showing(f);
 	return (0);
@@ -223,11 +230,11 @@ int 			deal_mouse(int key, int x_, int y_, t_fcl *f)
 	y = HGT - y;
 	if (key == 1)
 	{
-		f->max_i += 40.0f;
+		f->max_i += 40;
 	}
 	if (key == 2)
 	{
-		f->max_i -= 40.0f;
+		f->max_i -= 40;
 	}
 	if (key == 4 || key == 5)
 		if (choose_zoom(f, x, y, key) == 0)
@@ -251,6 +258,7 @@ int 			deal_key(int key, t_fcl *f)
 		f->stop_move = (f->stop_move == 1) ? 0 : 1;
 	if (key == 53)
 		exit(0);
+	printf("offset1 %f offset2 %f tmp %f \n", f->offset1, f->offset2, f->tmp1);
 	showing(f);
 	return (0);
 }
